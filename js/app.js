@@ -42,6 +42,14 @@
   const saturationVal = document.getElementById('saturationVal');
   const gammaRange = document.getElementById('gammaRange');
   const gammaVal = document.getElementById('gammaVal');
+  const scaleRange = document.getElementById('scaleRange');
+  const scaleVal = document.getElementById('scaleVal');
+  const posXRange = document.getElementById('posXRange');
+  const posXVal = document.getElementById('posXVal');
+  const posYRange = document.getElementById('posYRange');
+  const posYVal = document.getElementById('posYVal');
+  const rotRange = document.getElementById('rotRange');
+  const rotVal = document.getElementById('rotVal');
   const resetAdjustBtn = document.getElementById('resetAdjustBtn');
 
   // ── Theme setup ──────────────────────────────────────────────────────────
@@ -111,12 +119,32 @@
     gammaVal.textContent = parseFloat(gammaRange.value).toFixed(1);
     autoPreview();
   });
+  scaleRange.addEventListener('input', () => {
+    scaleVal.textContent = parseFloat(scaleRange.value).toFixed(2) + 'x';
+    autoPreview();
+  });
+  posXRange.addEventListener('input', () => {
+    posXVal.textContent = posXRange.value + '%';
+    autoPreview();
+  });
+  posYRange.addEventListener('input', () => {
+    posYVal.textContent = posYRange.value + '%';
+    autoPreview();
+  });
+  rotRange.addEventListener('input', () => {
+    rotVal.textContent = rotRange.value + '°';
+    autoPreview();
+  });
 
   resetAdjustBtn.addEventListener('click', () => {
     brightnessRange.value = 100; brightnessVal.textContent = '100%';
     contrastRange.value = 100;   contrastVal.textContent = '100%';
     saturationRange.value = 100; saturationVal.textContent = '100%';
     gammaRange.value = 1.0;      gammaVal.textContent = '1.0';
+    scaleRange.value = 1.0;      scaleVal.textContent = '1.0x';
+    posXRange.value = 0;         posXVal.textContent = '0%';
+    posYRange.value = 0;         posYVal.textContent = '0%';
+    rotRange.value = 0;          rotVal.textContent = '0°';
     autoPreview();
   });
 
@@ -127,7 +155,42 @@
       contrast: parseInt(contrastRange.value),
       saturation: parseInt(saturationRange.value),
       gamma: parseFloat(gammaRange.value),
+      scale: parseFloat(scaleRange.value),
+      posX: parseInt(posXRange.value),
+      posY: parseInt(posYRange.value),
+      rotation: parseInt(rotRange.value),
     };
+  }
+
+  // ── Draw Video with Transform ────────────────────────────────────────────
+  function drawVideoToCanvas(video, ctx, w, h) {
+    const adj = getAdjustments();
+    
+    ctx.fillStyle = bgColor.value; // Draw background behind transformed video
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.save();
+    
+    // Move to center of canvas
+    ctx.translate(w / 2, h / 2);
+    
+    // Apply position offsets (percentages of width/height)
+    ctx.translate((w * adj.posX) / 100, (h * adj.posY) / 100);
+    
+    // Apply rotation
+    if (adj.rotation !== 0) {
+      ctx.rotate((adj.rotation * Math.PI) / 180);
+    }
+    
+    // Apply scale
+    if (adj.scale !== 1.0) {
+      ctx.scale(adj.scale, adj.scale);
+    }
+    
+    // Draw centered
+    ctx.drawImage(video, -w / 2, -h / 2, w, h);
+    
+    ctx.restore();
   }
 
   // ── Apply footage adjustments to a canvas context via CSS filter ─────────
@@ -300,12 +363,13 @@
     if (!videoReady) return;
     const p = getFullParams();
 
-    // Draw video frame to small offscreen canvas for sampling
+    // Draw video frame to small offscreen canvas with transforms
     const sampleW = 640;
     const sampleH = Math.round((sampleW * videoEl.videoHeight) / videoEl.videoWidth);
     const sampleCanvas = new OffscreenCanvas(sampleW, sampleH);
     const sCtx = sampleCanvas.getContext('2d');
-    sCtx.drawImage(videoEl, 0, 0, sampleW, sampleH);
+    
+    drawVideoToCanvas(videoEl, sCtx, sampleW, sampleH);
 
     // Apply footage adjustments before theme rendering
     applyFootageFilter(sCtx, sampleW, sampleH);
@@ -402,6 +466,15 @@
       saturationVal.textContent = saturationRange.value + '%';
       gammaRange.value = p.adjust.gamma ?? 1.0;
       gammaVal.textContent = parseFloat(gammaRange.value).toFixed(1);
+      
+      scaleRange.value = p.adjust.scale ?? 1.0;
+      scaleVal.textContent = parseFloat(scaleRange.value).toFixed(2) + 'x';
+      posXRange.value = p.adjust.posX ?? 0;
+      posXVal.textContent = posXRange.value + '%';
+      posYRange.value = p.adjust.posY ?? 0;
+      posYVal.textContent = posYRange.value + '%';
+      rotRange.value = p.adjust.rotation ?? 0;
+      rotVal.textContent = rotRange.value + '°';
     }
     autoPreview();
   }
@@ -413,6 +486,7 @@
     get activeTheme() { return activeTheme; },
     getFullParams,
     setProgress,
+    drawVideoToCanvas,
     applyFootageFilter,
   };
 })();

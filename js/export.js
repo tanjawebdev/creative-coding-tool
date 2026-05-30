@@ -96,7 +96,7 @@ async function startExport() {
     videoEl.currentTime = t;
     await new Promise(res => videoEl.addEventListener('seeked', res, { once: true }));
 
-    sampleCtx.drawImage(videoEl, 0, 0, sampleW, sampleH);
+    app.drawVideoToCanvas(videoEl, sampleCtx, sampleW, sampleH);
     app.applyFootageFilter(sampleCtx, sampleW, sampleH);
     app.activeTheme.renderFrame(sampleCanvas, outCanvas, p);
 
