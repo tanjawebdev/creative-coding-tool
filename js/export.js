@@ -14,7 +14,7 @@ function getCodecString(w, h) {
 
 async function startExport() {
   const app = window.App;
-  if (!app.videoReady) return;
+  if (!app.canRender()) return;
   if (!window.VideoEncoder) {
     alert('Dein Browser unterstützt die WebCodecs API nicht.\nBitte Chrome 94+ oder Edge 94+ verwenden.');
     return;
@@ -31,7 +31,7 @@ async function startExport() {
   const p = app.getFullParams();
   const fps = 30;
   const videoEl = app.videoEl;
-  const duration = videoEl.duration;
+  const duration = app.getDuration();
   const frameCount = Math.round(duration * fps);
   const codec = getCodecString(p.outW, p.outH);
 
@@ -80,9 +80,13 @@ async function startExport() {
     avc: { format: 'avc' }, // AVCC format (not Annex B) — required by mp4-muxer
   });
 
-  // Sample canvas (small, for pixel reading)
-  const sampleW = Math.min(640, videoEl.videoWidth);
-  const sampleH = Math.round(sampleW * videoEl.videoHeight / videoEl.videoWidth);
+  // Sample canvas (small, for pixel reading, if video exists)
+  let sampleW = 640;
+  let sampleH = 360; // fallback aspect ratio
+  if (app.videoReady) {
+    sampleW = Math.min(640, videoEl.videoWidth);
+    sampleH = Math.round(sampleW * videoEl.videoHeight / videoEl.videoWidth);
+  }
   const sampleCanvas = new OffscreenCanvas(sampleW, sampleH);
   const sampleCtx = sampleCanvas.getContext('2d');
 
@@ -93,12 +97,19 @@ async function startExport() {
     if (encoderError) break;
 
     const t = f / fps;
-    videoEl.currentTime = t;
-    await new Promise(res => videoEl.addEventListener('seeked', res, { once: true }));
+    let sourceCanvas = null;
 
-    app.drawVideoToCanvas(videoEl, sampleCtx, sampleW, sampleH);
-    app.applyFootageFilter(sampleCtx, sampleW, sampleH);
-    app.activeTheme.renderFrame(sampleCanvas, outCanvas, p);
+    if (app.videoReady) {
+      videoEl.currentTime = t;
+      await new Promise(res => videoEl.addEventListener('seeked', res, { once: true }));
+
+      app.drawVideoToCanvas(videoEl, sampleCtx, sampleW, sampleH);
+      app.applyFootageFilter(sampleCtx, sampleW, sampleH);
+      sourceCanvas = sampleCanvas;
+    }
+
+    p.time = t;
+    app.activeTheme.renderFrame(sourceCanvas, outCanvas, p);
 
     const bitmap = await createImageBitmap(outCanvas);
     const vf = new VideoFrame(bitmap, {

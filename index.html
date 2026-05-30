@@ -35,6 +35,15 @@
         <div class="dz-filename" id="dzFilename"></div>
       </div>
 
+      <!-- Generator Settings (visible if theme is generative and no video loaded) -->
+      <div id="generatorSettings" style="display:none; margin-top:14px; padding: 12px; border: 1px solid var(--accent); background: rgba(57, 255, 20, 0.05);">
+        <div style="font-size:10px; color:var(--accent); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">Generativer Modus</div>
+        <div class="control-row" style="margin-bottom:0">
+          <label>Dauer (Sek) <span class="val" id="durationVal">10s</span></label>
+          <input type="range" id="durationRange" min="1" max="60" value="10" step="1">
+        </div>
+      </div>
+
       <!-- Adjust Footage (collapsible) -->
       <details class="accordion" id="adjustFootage">
         <summary class="accordion-toggle">Adjust Footage</summary>
@@ -162,6 +171,8 @@
   <script src="js/themes/ascii.js"></script>
   <script src="js/themes/rasterize.js"></script>
   <script src="js/themes/halftone.js"></script>
+  <script src="js/themes/modulator.js"></script>
+  <script src="js/themes/gradient-plating.js"></script>
   <script src="js/export.js"></script>
   <script src="js/app.js"></script>
 

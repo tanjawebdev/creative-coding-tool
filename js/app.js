@@ -3,7 +3,7 @@
 
 (function () {
   // ── Theme Registry ───────────────────────────────────────────────────────
-  const themes = [window.AsciiTheme, window.RasterizeTheme, window.HalftoneTheme];
+  const themes = [window.AsciiTheme, window.RasterizeTheme, window.HalftoneTheme, window.ModulatorTheme, window.GradientPlatingTheme];
   let activeTheme = themes[0];
 
   // ── State ────────────────────────────────────────────────────────────────
@@ -51,6 +51,54 @@
   const rotRange = document.getElementById('rotRange');
   const rotVal = document.getElementById('rotVal');
   const resetAdjustBtn = document.getElementById('resetAdjustBtn');
+  
+  const generatorSettings = document.getElementById('generatorSettings');
+  const durationRange = document.getElementById('durationRange');
+  const durationVal = document.getElementById('durationVal');
+
+  // ── Duration & Ready State ───────────────────────────────────────────────
+  let virtualTime = 0;
+  
+  function getDuration() {
+    return videoReady ? videoEl.duration : parseInt(durationRange.value);
+  }
+
+  function isGeneratorMode() {
+    return activeTheme.isGenerator && !videoReady;
+  }
+
+  function canRender() {
+    return videoReady || activeTheme.isGenerator;
+  }
+
+  function checkReadyState() {
+    if (activeTheme.isGenerator && !videoReady) {
+      generatorSettings.style.display = 'block';
+    } else {
+      generatorSettings.style.display = 'none';
+    }
+
+    if (canRender()) {
+      previewBtn.disabled = false;
+      exportBtn.disabled = false;
+      emptyState.style.display = 'none';
+      previewCanvas.style.display = 'block';
+      scrubberWrap.classList.add('visible');
+      scrubber.max = Math.max(1, Math.round(getDuration() * 10));
+      updateTimeDisplay();
+    } else {
+      previewBtn.disabled = true;
+      exportBtn.disabled = true;
+      emptyState.style.display = 'flex';
+      previewCanvas.style.display = 'none';
+      scrubberWrap.classList.remove('visible');
+    }
+  }
+
+  durationRange.addEventListener('input', () => {
+    durationVal.textContent = durationRange.value + 's';
+    if (isGeneratorMode()) checkReadyState();
+  });
 
   // ── Theme setup ──────────────────────────────────────────────────────────
   function populateThemeSelect() {
@@ -81,6 +129,7 @@
 
   themeSelect.addEventListener('change', () => {
     activateTheme(themeSelect.value);
+    checkReadyState();
     autoPreview();
   });
 
@@ -263,10 +312,8 @@
       () => {
         videoReady = true;
         totalFrames = Math.round(videoEl.duration * 30); // estimate
-        scrubber.max = Math.max(1, Math.round(videoEl.duration * 10));
-        previewBtn.disabled = false;
-        exportBtn.disabled = false;
-        renderPreviewAtTime(0);
+        checkReadyState();
+        startPlayback();
       },
       { once: true }
     );
@@ -275,26 +322,34 @@
   // ── Preview ──────────────────────────────────────────────────────────────
   let previewDebounce = null;
   function autoPreview() {
-    if (!videoReady) return;
+    if (!canRender()) return;
     clearTimeout(previewDebounce);
-    previewDebounce = setTimeout(() => renderPreviewAtTime(videoEl.currentTime), 80);
+    const t = videoReady ? videoEl.currentTime : virtualTime;
+    previewDebounce = setTimeout(() => renderPreviewAtTime(t), 80);
   }
 
   previewBtn.addEventListener('click', () => {
-    if (videoReady) renderPreviewAtTime(videoEl.currentTime);
+    if (canRender()) renderPreviewAtTime(videoReady ? videoEl.currentTime : virtualTime);
   });
 
   scrubber.addEventListener('input', () => {
-    if (!videoReady) return;
+    if (!canRender()) return;
     if (isPlaying) stopPlayback();
     const t = parseFloat(scrubber.value) / 10;
-    videoEl.currentTime = t;
-    videoEl.addEventListener('seeked', () => renderPreviewAtTime(t), { once: true });
+    if (videoReady) {
+      videoEl.currentTime = t;
+      videoEl.addEventListener('seeked', () => renderPreviewAtTime(t), { once: true });
+    } else {
+      virtualTime = t;
+      renderPreviewAtTime(t);
+      updateTimeDisplay();
+    }
   });
 
   // ── Play / Pause ────────────────────────────────────────────────────────
   let isPlaying = false;
   let playRAF = null;
+  let lastFrameTime = 0;
 
   function formatTime(seconds) {
     const m = Math.floor(seconds / 60);
@@ -303,34 +358,35 @@
   }
 
   function updateTimeDisplay() {
-    if (!videoReady) return;
-    scrubberTime.textContent = `${formatTime(videoEl.currentTime)} / ${formatTime(videoEl.duration)}`;
+    if (!canRender()) return;
+    const current = videoReady ? videoEl.currentTime : virtualTime;
+    scrubberTime.textContent = `${formatTime(current)} / ${formatTime(getDuration())}`;
   }
 
   playPauseBtn.addEventListener('click', () => {
-    if (!videoReady) return;
-    if (isPlaying) {
-      stopPlayback();
-    } else {
-      startPlayback();
-    }
+    if (!canRender()) return;
+    if (isPlaying) stopPlayback();
+    else startPlayback();
   });
 
   function startPlayback() {
-    if (!videoReady) return;
-    // If at the end, restart from beginning
-    if (videoEl.currentTime >= videoEl.duration - 0.1) {
-      videoEl.currentTime = 0;
+    if (!canRender()) return;
+    const current = videoReady ? videoEl.currentTime : virtualTime;
+    const dur = getDuration();
+    if (current >= dur - 0.1) {
+      if (videoReady) videoEl.currentTime = 0;
+      else virtualTime = 0;
     }
-    videoEl.play();
+    if (videoReady) videoEl.play();
     isPlaying = true;
     playPauseBtn.textContent = '⏸';
     playPauseBtn.classList.add('playing');
+    lastFrameTime = performance.now();
     playLoop();
   }
 
   function stopPlayback() {
-    videoEl.pause();
+    if (videoReady) videoEl.pause();
     isPlaying = false;
     playPauseBtn.textContent = '▶';
     playPauseBtn.classList.remove('playing');
@@ -343,41 +399,49 @@
   function playLoop() {
     if (!isPlaying) return;
 
-    // Check if video ended
-    if (videoEl.ended || videoEl.currentTime >= videoEl.duration) {
-      stopPlayback();
-      return;
+    const dur = getDuration();
+    
+    if (videoReady) {
+      if (videoEl.ended || videoEl.currentTime >= dur - 0.05) {
+        videoEl.currentTime = 0;
+        videoEl.play();
+      }
+    } else {
+      const now = performance.now();
+      const dt = (now - lastFrameTime) / 1000;
+      lastFrameTime = now;
+      virtualTime += dt;
+      if (virtualTime >= dur) virtualTime = 0; // Loop
     }
 
-    // Update scrubber position
-    scrubber.value = Math.round(videoEl.currentTime * 10);
-    updateTimeDisplay();
+    const current = videoReady ? videoEl.currentTime : virtualTime;
 
-    // Render current frame
-    renderPreviewAtTime(videoEl.currentTime);
+    scrubber.value = Math.round(current * 10);
+    updateTimeDisplay();
+    renderPreviewAtTime(current);
 
     playRAF = requestAnimationFrame(playLoop);
   }
 
   async function renderPreviewAtTime(t) {
-    if (!videoReady) return;
+    if (!canRender()) return;
     const p = getFullParams();
+    p.time = t; // Pass current time to theme
 
-    // Draw video frame to small offscreen canvas with transforms
-    const sampleW = 640;
-    const sampleH = Math.round((sampleW * videoEl.videoHeight) / videoEl.videoWidth);
-    const sampleCanvas = new OffscreenCanvas(sampleW, sampleH);
-    const sCtx = sampleCanvas.getContext('2d');
-    
-    drawVideoToCanvas(videoEl, sCtx, sampleW, sampleH);
+    let sourceCanvas = null;
 
-    // Apply footage adjustments before theme rendering
-    applyFootageFilter(sCtx, sampleW, sampleH);
+    if (videoReady) {
+      const sampleW = 640;
+      const sampleH = Math.round((sampleW * videoEl.videoHeight) / videoEl.videoWidth);
+      sourceCanvas = new OffscreenCanvas(sampleW, sampleH);
+      const sCtx = sourceCanvas.getContext('2d');
+      drawVideoToCanvas(videoEl, sCtx, sampleW, sampleH);
+      applyFootageFilter(sCtx, sampleW, sampleH);
+    }
 
-    // Render via active theme
     previewCanvas.width = p.outW;
     previewCanvas.height = p.outH;
-    activeTheme.renderFrame(sampleCanvas, previewCanvas, p);
+    activeTheme.renderFrame(sourceCanvas, previewCanvas, p);
 
     emptyState.style.display = 'none';
     previewCanvas.style.display = 'block';
@@ -476,14 +540,25 @@
       rotRange.value = p.adjust.rotation ?? 0;
       rotVal.textContent = rotRange.value + '°';
     }
+    // Apply generator params
+    if (p.generatorDuration !== undefined) {
+      durationRange.value = p.generatorDuration;
+      durationVal.textContent = p.generatorDuration + 's';
+    }
+
     autoPreview();
   }
+
+  // ── Initialization ─────────────────────────────────────────────────────────
+  checkReadyState();
 
   // ── Expose shared state for export.js ────────────────────────────────────
   window.App = {
     get videoEl() { return videoEl; },
     get videoReady() { return videoReady; },
     get activeTheme() { return activeTheme; },
+    getDuration,
+    canRender,
     getFullParams,
     setProgress,
     drawVideoToCanvas,
