@@ -32,6 +32,8 @@
   const emptyState = document.getElementById('emptyState');
   const scrubberWrap = document.getElementById('scrubberWrap');
   const scrubber = document.getElementById('scrubber');
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  const scrubberTime = document.getElementById('scrubberTime');
 
   // ── Adjust Footage DOM refs ──────────────────────────────────────────────
   const brightnessRange = document.getElementById('brightnessRange');
@@ -231,10 +233,78 @@
 
   scrubber.addEventListener('input', () => {
     if (!videoReady) return;
+    if (isPlaying) stopPlayback();
     const t = parseFloat(scrubber.value) / 10;
     videoEl.currentTime = t;
     videoEl.addEventListener('seeked', () => renderPreviewAtTime(t), { once: true });
   });
+
+  // ── Play / Pause ────────────────────────────────────────────────────────
+  let isPlaying = false;
+  let playRAF = null;
+
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+  function updateTimeDisplay() {
+    if (!videoReady) return;
+    scrubberTime.textContent = `${formatTime(videoEl.currentTime)} / ${formatTime(videoEl.duration)}`;
+  }
+
+  playPauseBtn.addEventListener('click', () => {
+    if (!videoReady) return;
+    if (isPlaying) {
+      stopPlayback();
+    } else {
+      startPlayback();
+    }
+  });
+
+  function startPlayback() {
+    if (!videoReady) return;
+    // If at the end, restart from beginning
+    if (videoEl.currentTime >= videoEl.duration - 0.1) {
+      videoEl.currentTime = 0;
+    }
+    videoEl.play();
+    isPlaying = true;
+    playPauseBtn.textContent = '⏸';
+    playPauseBtn.classList.add('playing');
+    playLoop();
+  }
+
+  function stopPlayback() {
+    videoEl.pause();
+    isPlaying = false;
+    playPauseBtn.textContent = '▶';
+    playPauseBtn.classList.remove('playing');
+    if (playRAF) {
+      cancelAnimationFrame(playRAF);
+      playRAF = null;
+    }
+  }
+
+  function playLoop() {
+    if (!isPlaying) return;
+
+    // Check if video ended
+    if (videoEl.ended || videoEl.currentTime >= videoEl.duration) {
+      stopPlayback();
+      return;
+    }
+
+    // Update scrubber position
+    scrubber.value = Math.round(videoEl.currentTime * 10);
+    updateTimeDisplay();
+
+    // Render current frame
+    renderPreviewAtTime(videoEl.currentTime);
+
+    playRAF = requestAnimationFrame(playLoop);
+  }
 
   async function renderPreviewAtTime(t) {
     if (!videoReady) return;

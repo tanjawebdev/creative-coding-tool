@@ -135,8 +135,12 @@
     </div>
     <canvas id="preview-canvas" style="display:none;"></canvas>
     <div class="scrubber-wrap" id="scrubberWrap">
-      <input type="range" id="scrubber" min="0" max="100" value="0">
-      <div class="scrubber-label">FRAME SCRUBBER — ziehe um Frames zu vergleichen</div>
+      <div class="scrubber-row">
+        <button class="play-btn" id="playPauseBtn" title="Play / Pause">▶</button>
+        <input type="range" id="scrubber" min="0" max="100" value="0">
+        <span class="scrubber-time" id="scrubberTime">0:00 / 0:00</span>
+      </div>
+      <div class="scrubber-label">FRAME SCRUBBER</div>
     </div>
   </main>
 
