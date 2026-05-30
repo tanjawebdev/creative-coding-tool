@@ -3,7 +3,7 @@
 
 (function () {
   // ── Theme Registry ───────────────────────────────────────────────────────
-  const themes = [window.AsciiTheme, window.RasterizeTheme];
+  const themes = [window.AsciiTheme, window.RasterizeTheme, window.HalftoneTheme];
   let activeTheme = themes[0];
 
   // ── State ────────────────────────────────────────────────────────────────
