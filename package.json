@@ -1,0 +1,13 @@
+{
+  "name": "ascii-video",
+  "version": "1.0.0",
+  "description": "Convert any video to 4K ASCII art video",
+  "main": "convert.js",
+  "scripts": {
+    "convert": "node convert.js"
+  },
+  "dependencies": {
+    "canvas": "^2.11.2",
+    "fluent-ffmpeg": "^2.1.3"
+  }
+}

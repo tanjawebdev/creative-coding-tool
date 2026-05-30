@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASCII VIDEO</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #000;
+    --fg: #fff;
+    --accent: #39ff14;
+    --dim: #333;
+    --panel: #0a0a0a;
+    --border: #1e1e1e;
+    --label: #555;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    grid-template-rows: auto 1fr;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+
+  .logo {
+    font-family: 'VT323', monospace;
+    font-size: 28px;
+    letter-spacing: 6px;
+    color: var(--accent);
+    text-shadow: 0 0 20px rgba(57,255,20,0.4);
+  }
+
+  .logo span { color: var(--dim); }
+
+  .header-meta {
+    font-size: 11px;
+    color: var(--label);
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  /* ── SIDEBAR ── */
+  aside {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--label);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Upload zone */
+  .drop-zone {
+    border: 1px dashed var(--dim);
+    padding: 24px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+  .drop-zone:hover, .drop-zone.over {
+    border-color: var(--accent);
+    background: rgba(57,255,20,0.03);
+  }
+  .drop-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .drop-zone .dz-icon { font-size: 32px; margin-bottom: 8px; }
+  .drop-zone .dz-text { font-size: 12px; color: var(--label); line-height: 1.6; }
+  .drop-zone .dz-text strong { color: var(--fg); }
+  .drop-zone .dz-filename {
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--accent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Controls */
+  .control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 14px;
+  }
+
+  .control-row label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--label);
+    letter-spacing: 1px;
+  }
+
+  .control-row label .val {
+    color: var(--accent);
+    font-size: 12px;
+    min-width: 40px;
+    text-align: right;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 2px;
+    background: var(--dim);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px; height: 12px;
+    background: var(--accent);
+    border-radius: 0;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(57,255,20,0.5);
+  }
+
+  input[type=text], select, textarea {
+    width: 100%;
+    background: #0d0d0d;
+    border: 1px solid var(--border);
+    color: var(--fg);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: none;
+  }
+  input[type=text]:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+  }
+
+  select option { background: #111; }
+
+  .chars-preview {
+    font-size: 10px;
+    color: var(--label);
+    word-break: break-all;
+    line-height: 1.5;
+    margin-top: 4px;
+    min-height: 20px;
+  }
+
+  /* Color controls */
+  .color-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .color-swatch {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .color-swatch label { font-size: 10px; color: var(--label); letter-spacing: 1px; }
+  .color-swatch input[type=color] {
+    width: 100%;
+    height: 32px;
+    border: 1px solid var(--border);
+    background: none;
+    cursor: pointer;
+    padding: 2px;
+  }
+
+  /* Buttons */
+  .btn {
+    width: 100%;
+    padding: 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .btn-preview {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+  }
+  .btn-preview:hover { background: rgba(57,255,20,0.08); }
+
+  .btn-export {
+    background: var(--accent);
+    color: #000;
+    font-weight: bold;
+  }
+  .btn-export:hover { background: #4dff25; box-shadow: 0 0 20px rgba(57,255,20,0.3); }
+  .btn-export:disabled {
+    background: var(--dim);
+    color: var(--label);
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  /* Progress */
+  .progress-wrap {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .progress-wrap.active { display: flex; }
+  .progress-bar-bg {
+    width: 100%;
+    height: 2px;
+    background: var(--dim);
+    position: relative;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.1s linear;
+    box-shadow: 0 0 8px rgba(57,255,20,0.6);
+  }
+  .progress-text {
+    font-size: 11px;
+    color: var(--label);
+    text-align: center;
+  }
+
+  /* ── MAIN / PREVIEW ── */
+  main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #preview-canvas {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    image-rendering: pixelated;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    color: var(--dim);
+    text-align: center;
+  }
+  .empty-state .es-icon { font-size: 64px; opacity: 0.3; }
+  .empty-state p { font-size: 13px; letter-spacing: 2px; }
+
+  /* frame scrubber */
+  .scrubber-wrap {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(600px, 80%);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .scrubber-wrap.visible { display: flex; }
+  .scrubber-wrap input[type=range] { width: 100%; }
+  .scrubber-label {
+    font-size: 10px;
+    color: var(--label);
+    letter-spacing: 2px;
+  }
+
+  /* scanline overlay */
+  main::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--dim); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ASCII<span>//</span>VIDEO</div>
+  <div class="header-meta">
+    Live Preview + 4K Export<br>
+    Keine Installation · Läuft im Browser
+  </div>
+</header>
+
+<aside>
+
+  <!-- Upload -->
+  <div>
+    <div class="section-label">01 — Input</div>
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept="video/*">
+      <div class="dz-icon">▶</div>
+      <div class="dz-text"><strong>Video hochladen</strong><br>oder hierher ziehen<br><span style="font-size:10px;color:#444">MP4, MOV, WebM, AVI</span></div>
+      <div class="dz-filename" id="dzFilename"></div>
+    </div>
+  </div>
+
+  <!-- ASCII Settings -->
+  <div>
+    <div class="section-label">02 — ASCII</div>
+
+    <div class="control-row">
+      <label>Spalten (Columns) <span class="val" id="colsVal">160</span></label>
+      <input type="range" id="colsRange" min="40" max="400" value="160" step="10">
+    </div>
+
+    <div class="control-row">
+      <label>Char-Aspekt (Höhe/Breite) <span class="val" id="aspectVal">2.0</span></label>
+      <input type="range" id="aspectRange" min="1.0" max="3.0" value="2.0" step="0.1">
+    </div>
+
+    <div class="control-row">
+      <label>Font</label>
+      <select id="fontSelect">
+        <option value="'Courier New', monospace">Courier New</option>
+        <option value="'Lucida Console', monospace">Lucida Console</option>
+        <option value="'Share Tech Mono', monospace">Share Tech Mono</option>
+        <option value="'VT323', monospace">VT323</option>
+        <option value="monospace">System Monospace</option>
+      </select>
+    </div>
+
+    <div class="control-row">
+      <label>ASCII Chars</label>
+      <textarea id="charsInput" rows="2"> .`-_':,;^=+/"|)\<>iv%xclrs{*}I?!][1taeo7zjLunT#JCwfy325Vb6mqkdWM8&0@$</textarea>
+      <div class="chars-preview" id="charsPreview"></div>
+    </div>
+  </div>
+
+  <!-- Output Settings -->
+  <div>
+    <div class="section-label">03 — Output</div>
+
+    <div class="control-row">
+      <label>Auflösung</label>
+      <select id="resSelect">
+        <option value="3840x2160">4K — 3840×2160</option>
+        <option value="1920x1080" selected>Full HD — 1920×1080</option>
+        <option value="1280x720">HD — 1280×720</option>
+        <option value="854x480">SD — 854×480</option>
+      </select>
+    </div>
+
+    <div class="control-row">
+      <label>Font-Größe (px) <span class="val" id="fontSizeVal">auto</span></label>
+      <input type="range" id="fontSizeRange" min="0" max="60" value="0" step="1">
+      <div style="font-size:10px;color:#444;margin-top:3px">0 = automatisch</div>
+    </div>
+
+    <div class="color-row">
+      <div class="color-swatch">
+        <label>HINTERGRUND</label>
+        <input type="color" id="bgColor" value="#000000">
+      </div>
+      <div class="color-swatch">
+        <label>TEXT</label>
+        <input type="color" id="fgColor" value="#ffffff">
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <button class="btn btn-preview" id="previewBtn" disabled>▶ Preview aktualisieren</button>
+    <button class="btn btn-export" id="exportBtn" disabled>⬇ MP4 exportieren</button>
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+      <div class="progress-text" id="progressText">Initialisiere...</div>
+    </div>
+  </div>
+
+</aside>
+
+<main id="mainArea">
+  <div class="empty-state" id="emptyState">
+    <div class="es-icon">▒</div>
+    <p>Lade ein Video hoch<br>um die Preview zu starten</p>
+  </div>
+  <canvas id="preview-canvas" style="display:none;"></canvas>
+  <div class="scrubber-wrap" id="scrubberWrap">
+    <input type="range" id="scrubber" min="0" max="100" value="0">
+    <div class="scrubber-label">FRAME SCRUBBER — ziehe um Frames zu vergleichen</div>
+  </div>
+</main>
+
+<!-- Hidden video element for frame extraction -->
+<video id="hiddenVideo" style="display:none" crossorigin="anonymous" preload="auto"></video>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let videoFile = null;
+let videoEl = document.getElementById('hiddenVideo');
+let videoReady = false;
+let totalFrames = 0;
+
+// ── DOM refs ─────────────────────────────────────────────────────────────────
+const fileInput    = document.getElementById('fileInput');
+const dropZone     = document.getElementById('dropZone');
+const dzFilename   = document.getElementById('dzFilename');
+const colsRange    = document.getElementById('colsRange');
+const colsVal      = document.getElementById('colsVal');
+const aspectRange  = document.getElementById('aspectRange');
+const aspectVal    = document.getElementById('aspectVal');
+const fontSelect   = document.getElementById('fontSelect');
+const charsInput   = document.getElementById('charsInput');
+const charsPreview = document.getElementById('charsPreview');
+const resSelect    = document.getElementById('resSelect');
+const fontSizeRange= document.getElementById('fontSizeRange');
+const fontSizeVal  = document.getElementById('fontSizeVal');
+const bgColor      = document.getElementById('bgColor');
+const fgColor      = document.getElementById('fgColor');
+const previewBtn   = document.getElementById('previewBtn');
+const exportBtn    = document.getElementById('exportBtn');
+const progressWrap = document.getElementById('progressWrap');
+const progressFill = document.getElementById('progressFill');
+const progressText = document.getElementById('progressText');
+const previewCanvas= document.getElementById('preview-canvas');
+const emptyState   = document.getElementById('emptyState');
+const scrubberWrap = document.getElementById('scrubberWrap');
+const scrubber     = document.getElementById('scrubber');
+
+// ── Params ───────────────────────────────────────────────────────────────────
+function getParams() {
+  const [outW, outH] = resSelect.value.split('x').map(Number);
+  const cols = parseInt(colsRange.value);
+  const aspect = parseFloat(aspectRange.value);
+  const manualFontSize = parseInt(fontSizeRange.value);
+  const fontSize = manualFontSize > 0 ? manualFontSize : null; // null = auto
+  return {
+    cols, aspect, fontSize,
+    font: fontSelect.value,
+    chars: charsInput.value || ' .:-=+*#@',
+    outW, outH,
+    bg: bgColor.value,
+    fg: fgColor.value,
+  };
+}
+
+// ── Live labels ──────────────────────────────────────────────────────────────
+colsRange.addEventListener('input', () => { colsVal.textContent = colsRange.value; autoPreview(); });
+aspectRange.addEventListener('input', () => { aspectVal.textContent = parseFloat(aspectRange.value).toFixed(1); autoPreview(); });
+fontSizeRange.addEventListener('input', () => {
+  const v = parseInt(fontSizeRange.value);
+  fontSizeVal.textContent = v === 0 ? 'auto' : v + 'px';
+  autoPreview();
+});
+charsInput.addEventListener('input', () => { updateCharsPreview(); autoPreview(); });
+fontSelect.addEventListener('change', autoPreview);
+resSelect.addEventListener('change', autoPreview);
+bgColor.addEventListener('input', autoPreview);
+fgColor.addEventListener('input', autoPreview);
+
+function updateCharsPreview() {
+  charsPreview.textContent = `${charsInput.value.length} Zeichen`;
+}
+updateCharsPreview();
+
+// ── File handling ─────────────────────────────────────────────────────────────
+fileInput.addEventListener('change', e => loadFile(e.target.files[0]));
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('over');
+  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+
+function loadFile(file) {
+  if (!file || !file.type.startsWith('video/')) return;
+  videoFile = file;
+  dzFilename.textContent = file.name;
+  const url = URL.createObjectURL(file);
+  videoEl.src = url;
+  videoEl.addEventListener('loadedmetadata', () => {
+    videoReady = true;
+    totalFrames = Math.round(videoEl.duration * 30); // estimate
+    scrubber.max = Math.max(1, Math.round(videoEl.duration * 10));
+    previewBtn.disabled = false;
+    exportBtn.disabled = false;
+    renderPreviewAtTime(0);
+  }, { once: true });
+}
+
+// ── Preview ───────────────────────────────────────────────────────────────────
+let previewDebounce = null;
+function autoPreview() {
+  if (!videoReady) return;
+  clearTimeout(previewDebounce);
+  previewDebounce = setTimeout(() => renderPreviewAtTime(videoEl.currentTime), 80);
+}
+
+previewBtn.addEventListener('click', () => {
+  if (videoReady) renderPreviewAtTime(videoEl.currentTime);
+});
+
+scrubber.addEventListener('input', () => {
+  if (!videoReady) return;
+  const t = parseFloat(scrubber.value) / 10;
+  videoEl.currentTime = t;
+  videoEl.addEventListener('seeked', () => renderPreviewAtTime(t), { once: true });
+});
+
+async function renderPreviewAtTime(t) {
+  if (!videoReady) return;
+  const p = getParams();
+
+  // Draw video frame to small offscreen canvas for sampling
+  const sampleW = 640;
+  const sampleH = Math.round(sampleW * videoEl.videoHeight / videoEl.videoWidth);
+  const sampleCanvas = new OffscreenCanvas(sampleW, sampleH);
+  const sCtx = sampleCanvas.getContext('2d');
+  sCtx.drawImage(videoEl, 0, 0, sampleW, sampleH);
+
+  // Render ASCII to preview canvas
+  previewCanvas.width  = p.outW;
+  previewCanvas.height = p.outH;
+  renderAsciiFrame(sampleCanvas, previewCanvas, p);
+
+  emptyState.style.display = 'none';
+  previewCanvas.style.display = 'block';
+  scrubberWrap.classList.add('visible');
+}
+
+// ── Core render ───────────────────────────────────────────────────────────────
+function renderAsciiFrame(srcCanvas, dstCanvas, p) {
+  const { cols, aspect, font, chars, outW, outH, bg, fg } = p;
+  const ctx = dstCanvas.getContext ? dstCanvas.getContext('2d') : dstCanvas.getContext('2d');
+
+  const srcW = srcCanvas.width;
+  const srcH = srcCanvas.height;
+
+  const cellW = srcW / cols;
+  const cellH = cellW * aspect;
+  const rows  = Math.ceil(srcH / cellH);
+
+  // Font size: auto = fill output width by cols
+  const fontSize = p.fontSize !== null ? p.fontSize : outW / cols;
+  ctx.font = `${fontSize}px ${font}`;
+  const charW = ctx.measureText('M').width;
+  const charH = fontSize * 1.2;
+
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, outW, outH);
+  ctx.fillStyle = fg;
+  ctx.textBaseline = 'top';
+
+  const srcCtx = srcCanvas.getContext('2d');
+  const imgData = srcCtx.getImageData(0, 0, srcW, srcH);
+  const px = imgData.data;
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const sx = Math.min(Math.floor((col + 0.5) * cellW), srcW - 1);
+      const sy = Math.min(Math.floor((row + 0.5) * cellH), srcH - 1);
+      const i  = (sy * srcW + sx) * 4;
+      const brightness = 0.299 * px[i] + 0.587 * px[i+1] + 0.114 * px[i+2];
+      const ci = Math.floor((brightness / 255) * (chars.length - 1));
+      const ch = chars[ci];
+      if (ch !== ' ') ctx.fillText(ch, col * charW, row * charH);
+    }
+  }
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+exportBtn.addEventListener('click', startExport);
+
+async function startExport() {
+  if (!videoReady) return;
+  if (!window.VideoEncoder) {
+    alert('Dein Browser unterstützt die WebCodecs API nicht.\nBitte Chrome 94+ oder Edge 94+ verwenden.');
+    return;
+  }
+
+  exportBtn.disabled = true;
+  previewBtn.disabled = true;
+  progressWrap.classList.add('active');
+
+  const p = getParams();
+  const fps = 30;
+  const duration = videoEl.duration;
+  const frameCount = Math.round(duration * fps);
+
+  setProgress(0, `Vorbereitung... (${frameCount} Frames)`);
+
+  // Collect encoded chunks
+  const chunks = [];
+  let encodedCount = 0;
+
+  const encoder = new VideoEncoder({
+    output: (chunk, meta) => {
+      const buf = new ArrayBuffer(chunk.byteLength);
+      chunk.copyTo(buf);
+      chunks.push({ buf, type: chunk.type, timestamp: chunk.timestamp, duration: chunk.duration });
+      encodedCount++;
+    },
+    error: (e) => console.error('Encoder error:', e),
+  });
+
+  encoder.configure({
+    codec: 'avc1.42001f',
+    width: p.outW,
+    height: p.outH,
+    bitrate: 40_000_000,
+    framerate: fps,
+  });
+
+  // Sample canvas (small, for pixel reading)
+  const sampleW = Math.min(640, videoEl.videoWidth);
+  const sampleH = Math.round(sampleW * videoEl.videoHeight / videoEl.videoWidth);
+  const sampleCanvas = new OffscreenCanvas(sampleW, sampleH);
+  const sampleCtx = sampleCanvas.getContext('2d');
+
+  // Output canvas
+  const outCanvas = new OffscreenCanvas(p.outW, p.outH);
+
+  for (let f = 0; f < frameCount; f++) {
+    const t = f / fps;
+    videoEl.currentTime = t;
+    await new Promise(res => videoEl.addEventListener('seeked', res, { once: true }));
+
+    sampleCtx.drawImage(videoEl, 0, 0, sampleW, sampleH);
+    renderAsciiFrame(sampleCanvas, outCanvas, p);
+
+    const bitmap = await createImageBitmap(outCanvas);
+    const vf = new VideoFrame(bitmap, {
+      timestamp: Math.round(t * 1_000_000),
+      duration:  Math.round(1_000_000 / fps),
+    });
+    encoder.encode(vf, { keyFrame: f % 30 === 0 });
+    vf.close();
+    bitmap.close();
+
+    const pct = ((f + 1) / frameCount) * 90;
+    setProgress(pct, `Rendere Frame ${f + 1} / ${frameCount}`);
+
+    // Yield to UI
+    if (f % 5 === 0) await new Promise(r => setTimeout(r, 0));
+  }
+
+  setProgress(92, 'Encoder flushen...');
+  await encoder.flush();
+  encoder.close();
+
+  setProgress(96, 'MP4 zusammenbauen...');
+  const mp4 = buildMP4(chunks, p.outW, p.outH, fps);
+
+  setProgress(100, 'Fertig! Download startet...');
+  const blob = new Blob([mp4], { type: 'video/mp4' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = 'ascii-video.mp4';
+  a.click();
+  URL.revokeObjectURL(url);
+
+  setTimeout(() => {
+    progressWrap.classList.remove('active');
+    exportBtn.disabled = false;
+    previewBtn.disabled = false;
+    setProgress(0, '');
+  }, 3000);
+}
+
+function setProgress(pct, text) {
+  progressFill.style.width = pct + '%';
+  progressText.textContent = text;
+}
+
+// ── Minimal MP4 muxer (fMP4 / fragmented) ─────────────────────────────────
+// Builds a basic but valid fragmented MP4 with H.264 video track.
+function buildMP4(chunks, width, height, fps) {
+  // We build a proper ISO BMFF file: ftyp + moov + then moof/mdat per chunk group
+  const timescale = 90000;
+  const frameDuration = Math.round(timescale / fps);
+
+  // Helper writers
+  function box(type, ...children) {
+    const typeBytes = new TextEncoder().encode(type);
+    const childData = children.map(c => c instanceof Uint8Array ? c : new Uint8Array(c));
+    const totalSize = 8 + childData.reduce((s, c) => s + c.byteLength, 0);
+    const buf = new ArrayBuffer(totalSize);
+    const view = new DataView(buf);
+    const u8   = new Uint8Array(buf);
+    view.setUint32(0, totalSize);
+    u8.set(typeBytes, 4);
+    let offset = 8;
+    for (const c of childData) { u8.set(c, offset); offset += c.byteLength; }
+    return u8;
+  }
+
+  function u32(v) { const b=new ArrayBuffer(4); new DataView(b).setUint32(0,v); return new Uint8Array(b); }
+  function u16(v) { const b=new ArrayBuffer(2); new DataView(b).setUint16(0,v); return new Uint8Array(b); }
+  function u8b(v) { return new Uint8Array([v & 0xff]); }
+  function i32(v) { const b=new ArrayBuffer(4); new DataView(b).setInt32(0,v); return new Uint8Array(b); }
+  function fullbox(type, version, flags, ...children) {
+    const fb = new Uint8Array(4);
+    new DataView(fb.buffer).setUint32(0, (version << 24) | (flags & 0xffffff));
+    return box(type, fb, ...children);
+  }
+
+  // Find SPS/PPS from first keyframe (avcC extradata)
+  // Since WebCodecs gives us Annex B, we extract SPS/PPS NALs
+  const firstKey = chunks.find(c => c.type === 'key');
+  if (!firstKey) throw new Error('Kein Keyframe gefunden');
+
+  const { sps, pps } = extractSPSPPS(new Uint8Array(firstKey.buf));
+
+  // avcC box
+  function makeAVCC() {
+    const spsLen = new Uint8Array(2); new DataView(spsLen.buffer).setUint16(0, sps.length);
+    const ppsLen = new Uint8Array(2); new DataView(ppsLen.buffer).setUint16(0, pps.length);
+    const payload = concat(
+      new Uint8Array([0x01, sps[1], sps[2], sps[3], 0xff, 0xe1]),
+      spsLen, sps,
+      new Uint8Array([0x01]),
+      ppsLen, pps
+    );
+    return box('avcC', payload);
+  }
+
+  // ftyp
+  const ftyp = box('ftyp',
+    new TextEncoder().encode('isom'),
+    u32(0x200),
+    new TextEncoder().encode('isomiso2avc1mp41')
+  );
+
+  // moov
+  const duration_moov = chunks.reduce((s, c) => s + frameDuration, 0);
+
+  const mvhd = fullbox('mvhd', 0, 0,
+    u32(0), u32(0), u32(timescale), u32(duration_moov),
+    u32(0x00010000), u16(0x0100), new Uint8Array(10),
+    new Uint8Array([0,1,0,0, 0,0,0,0, 0,0,0,0, 0,1,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0x40,0,0,0]),
+    new Uint8Array(24),
+    u32(2)
+  );
+
+  const tkhd = fullbox('tkhd', 0, 3,
+    u32(0), u32(0), u32(1), u32(0), u32(duration_moov),
+    new Uint8Array(8), u16(0), u16(0), u16(0), u16(0),
+    new Uint8Array([0,1,0,0, 0,0,0,0, 0,0,0,0, 0,1,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0x40,0,0,0]),
+    u32(width << 16), u32(height << 16)
+  );
+
+  const mdhd = fullbox('mdhd', 0, 0,
+    u32(0), u32(0), u32(timescale), u32(duration_moov),
+    u16(0x55c4), u16(0)
+  );
+
+  const hdlr = fullbox('hdlr', 0, 0,
+    u32(0),
+    new TextEncoder().encode('vide'),
+    new Uint8Array(12),
+    new TextEncoder().encode('VideoHandler\0')
+  );
+
+  const avc1 = box('avc1',
+    new Uint8Array(6), u16(1),
+    new Uint8Array(16),
+    u16(width), u16(height),
+    u32(0x00480000), u32(0x00480000),
+    u32(0), u16(1),
+    new Uint8Array(32),
+    u16(24), i32(-1),
+    makeAVCC()
+  );
+
+  const stsd = fullbox('stsd', 0, 0, u32(1), avc1);
+  const stts = fullbox('stts', 0, 0, u32(1), u32(chunks.length), u32(frameDuration));
+  const stsc = fullbox('stsc', 0, 0, u32(0));
+  const stsz = fullbox('stsz', 0, 0, u32(0), u32(0));
+  const stco = fullbox('stco', 0, 0, u32(0));
+  const stbl = box('stbl', stsd, stts, stsc, stsz, stco);
+  const minf = box('minf', box('vmhd', fullbox('vmhd',0,1, u16(0),u16(0),u16(0),u16(0))), box('dinf', fullbox('dref',0,0,u32(1), fullbox('url ',0,1))), stbl);
+  const mdia = box('mdia', mdhd, hdlr, minf);
+  const mvex = box('mvex', fullbox('trex',0,0, u32(1), u32(1), u32(frameDuration), u32(0), u32(0)));
+  const trak = box('trak', tkhd, mdia);
+  const moov = box('moov', mvhd, trak, mvex);
+
+  // moof + mdat per chunk
+  const parts = [ftyp, moov];
+  let baseDataOffset = ftyp.byteLength + moov.byteLength;
+
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    const nalData = annexBtoAVCC(new Uint8Array(chunk.buf));
+    const mfhd = fullbox('mfhd', 0, 0, u32(i + 1));
+    const flags = chunk.type === 'key' ? 0x02000000 : 0x00010001;
+    const trun = fullbox('trun', 0, 0x0f01,
+      u32(1), i32(0), // sample count, data offset placeholder
+      u32(frameDuration), u32(nalData.byteLength), u32(flags), u32(0)
+    );
+    const tfhd = fullbox('tfhd', 0, 0x020000, u32(1));
+    const tfdt = fullbox('tfdt', 0, 0, u32(i * frameDuration));
+    const traf = box('traf', tfhd, tfdt, trun);
+    const moof = box('moof', mfhd, traf);
+    const mdat = box('mdat', nalData);
+
+    // patch data-offset in trun (offset from start of moof to mdat payload)
+    // trun data offset is at: moof header(8) + mfhd(16) + traf header(8) + tfhd(?) + tfdt(16) + trun header(8) + fullbox(4) + sample_count(4) = needs patching
+    // Simpler: just recalculate; offset = moof.length + 8 (mdat size+type)
+    const dataOffsetPos = findTrunDataOffset(moof);
+    if (dataOffsetPos >= 0) {
+      new DataView(moof.buffer).setInt32(dataOffsetPos, moof.byteLength + 8);
+    }
+
+    parts.push(moof, mdat);
+  }
+
+  return concat(...parts);
+}
+
+function findTrunDataOffset(moofBytes) {
+  // Find 'trun' box and return offset of data_offset field inside it
+  const view = new DataView(moofBytes.buffer, moofBytes.byteOffset, moofBytes.byteLength);
+  for (let i = 0; i < moofBytes.length - 4; i++) {
+    if (moofBytes[i]===116&&moofBytes[i+1]===114&&moofBytes[i+2]===117&&moofBytes[i+3]===110) {
+      // 'trun' found at i; box starts at i-4
+      // fullbox: version(1)+flags(3) = 4 bytes after box header
+      // then sample_count(4), then data_offset(4)
+      return i + 4 + 4 + 4; // trun type + fullbox + sample_count
+    }
+  }
+  return -1;
+}
+
+function extractSPSPPS(annexB) {
+  const nals = splitAnnexBNals(annexB);
+  let sps = null, pps = null;
+  for (const nal of nals) {
+    const type = nal[0] & 0x1f;
+    if (type === 7 && !sps) sps = nal;
+    if (type === 8 && !pps) pps = nal;
+  }
+  if (!sps || !pps) {
+    // Fallback minimal SPS/PPS
+    sps = new Uint8Array([0x67,0x42,0xc0,0x1f,0xd9,0x00,0xa0,0x47,0xfe,0xc8]);
+    pps = new Uint8Array([0x68,0xce,0x38,0x80]);
+  }
+  return { sps, pps };
+}
+
+function splitAnnexBNals(data) {
+  const nals = [];
+  let i = 0;
+  while (i < data.length - 3) {
+    if (data[i]===0&&data[i+1]===0&&(data[i+2]===1||(data[i+2]===0&&data[i+3]===1))) {
+      const start = data[i+2]===1 ? i+3 : i+4;
+      let end = data.length;
+      for (let j = start; j < data.length - 3; j++) {
+        if (data[j]===0&&data[j+1]===0&&(data[j+2]===1||(data[j+2]===0&&data[j+3]===1))) {
+          end = j; break;
+        }
+      }
+      nals.push(data.slice(start, end));
+      i = end;
+    } else { i++; }
+  }
+  return nals;
+}
+
+function annexBtoAVCC(annexB) {
+  const nals = splitAnnexBNals(annexB);
+  const parts = [];
+  for (const nal of nals) {
+    const len = new Uint8Array(4);
+    new DataView(len.buffer).setUint32(0, nal.length);
+    parts.push(len, nal);
+  }
+  return concat(...parts);
+}
+
+function concat(...arrays) {
+  const total = arrays.reduce((s, a) => s + a.byteLength, 0);
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const a of arrays) { out.set(new Uint8Array(a.buffer ?? a), off); off += a.byteLength; }
+  return out;
+}
+</script>
+</body>
+</html>
