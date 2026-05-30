@@ -97,6 +97,7 @@ async function startExport() {
     await new Promise(res => videoEl.addEventListener('seeked', res, { once: true }));
 
     sampleCtx.drawImage(videoEl, 0, 0, sampleW, sampleH);
+    app.applyFootageFilter(sampleCtx, sampleW, sampleH);
     app.activeTheme.renderFrame(sampleCanvas, outCanvas, p);
 
     const bitmap = await createImageBitmap(outCanvas);

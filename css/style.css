@@ -130,6 +130,53 @@ aside {
   text-overflow: ellipsis;
 }
 
+/* ── Accordion (collapsible) ────────────────────────────────────────────────── */
+.accordion {
+  margin-top: 14px;
+  border: 1px solid var(--border);
+}
+
+.accordion-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--label);
+  text-transform: uppercase;
+  cursor: pointer;
+  background: transparent;
+  list-style: none;
+  transition: color 0.2s;
+}
+
+.accordion-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.accordion-toggle::after {
+  content: '＋';
+  font-size: 14px;
+  color: var(--dim);
+  transition: color 0.2s;
+}
+
+.accordion[open] .accordion-toggle::after {
+  content: '－';
+  color: var(--accent);
+}
+
+.accordion-toggle:hover {
+  color: var(--accent);
+}
+
+.accordion-body {
+  padding: 12px 12px 14px;
+  border-top: 1px solid var(--border);
+}
+
 /* ── Controls ───────────────────────────────────────────────────────────────── */
 .control-row {
   display: flex;
