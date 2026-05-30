@@ -3,7 +3,7 @@
 
 (function () {
   // ── Theme Registry ───────────────────────────────────────────────────────
-  const themes = [window.AsciiTheme];
+  const themes = [window.AsciiTheme, window.RasterizeTheme];
   let activeTheme = themes[0];
 
   // ── State ────────────────────────────────────────────────────────────────
@@ -19,8 +19,6 @@
   const dropZone = document.getElementById('dropZone');
   const dzFilename = document.getElementById('dzFilename');
   const resSelect = document.getElementById('resSelect');
-  const fontSizeRange = document.getElementById('fontSizeRange');
-  const fontSizeVal = document.getElementById('fontSizeVal');
   const bgColor = document.getElementById('bgColor');
   const fgColor = document.getElementById('fgColor');
   const previewBtn = document.getElementById('previewBtn');
@@ -81,12 +79,9 @@
   // ── Collect all parameters (global + theme-specific) ─────────────────────
   function getFullParams() {
     const [outW, outH] = resSelect.value.split('x').map(Number);
-    const manualFontSize = parseInt(fontSizeRange.value);
-    const fontSize = manualFontSize > 0 ? manualFontSize : null; // null = auto
 
     return {
       ...activeTheme.getParams(),
-      fontSize,
       outW,
       outH,
       bg: bgColor.value,
@@ -95,11 +90,6 @@
   }
 
   // ── Live labels for global controls ──────────────────────────────────────
-  fontSizeRange.addEventListener('input', () => {
-    const v = parseInt(fontSizeRange.value);
-    fontSizeVal.textContent = v === 0 ? 'auto' : v + 'px';
-    autoPreview();
-  });
   resSelect.addEventListener('change', autoPreview);
   bgColor.addEventListener('input', autoPreview);
   fgColor.addEventListener('input', autoPreview);
@@ -350,7 +340,6 @@
       theme: activeTheme.id,
       ...activeTheme.getParams(),
       resolution: resSelect.value,
-      fontSize: parseInt(fontSizeRange.value),
       bgColor: bgColor.value,
       fgColor: fgColor.value,
       adjust: getAdjustments(),
@@ -396,10 +385,6 @@
     // Apply global params
     if (p.resolution !== undefined) {
       resSelect.value = p.resolution;
-    }
-    if (p.fontSize !== undefined) {
-      fontSizeRange.value = p.fontSize;
-      fontSizeVal.textContent = p.fontSize === 0 ? 'auto' : p.fontSize + 'px';
     }
     if (p.bgColor !== undefined) {
       bgColor.value = p.bgColor;

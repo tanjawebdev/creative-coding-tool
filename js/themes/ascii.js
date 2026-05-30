@@ -31,6 +31,12 @@ window.AsciiTheme = {
       </div>
 
       <div class="control-row">
+        <label>Font-Größe (px) <span class="val" id="fontSizeVal">auto</span></label>
+        <input type="range" id="fontSizeRange" min="0" max="60" value="0" step="1">
+        <div style="font-size:10px;color:#444;margin-top:3px">0 = automatisch</div>
+      </div>
+
+      <div class="control-row">
         <label>ASCII Chars</label>
         <textarea id="charsInput" rows="2"> .\`-_':,;^=+/"|)\\<>iv%xclrs{*}I?!][1taeo7zjLunT#JCwfy325Vb6mqkdWM8&0@$</textarea>
         <div class="chars-preview" id="charsPreview"></div>
@@ -45,6 +51,8 @@ window.AsciiTheme = {
     const aspectRange = document.getElementById('aspectRange');
     const aspectVal = document.getElementById('aspectVal');
     const fontSelect = document.getElementById('fontSelect');
+    const fontSizeRange = document.getElementById('fontSizeRange');
+    const fontSizeVal = document.getElementById('fontSizeVal');
     const charsInput = document.getElementById('charsInput');
     const charsPreview = document.getElementById('charsPreview');
 
@@ -65,6 +73,12 @@ window.AsciiTheme = {
 
     fontSelect.addEventListener('change', autoPreview);
 
+    fontSizeRange.addEventListener('input', () => {
+      const v = parseInt(fontSizeRange.value);
+      fontSizeVal.textContent = v === 0 ? 'auto' : v + 'px';
+      autoPreview();
+    });
+
     charsInput.addEventListener('input', () => {
       updateCharsPreview();
       autoPreview();
@@ -77,6 +91,7 @@ window.AsciiTheme = {
       cols: parseInt(document.getElementById('colsRange').value),
       aspect: parseFloat(document.getElementById('aspectRange').value),
       font: document.getElementById('fontSelect').value,
+      fontSize: parseInt(document.getElementById('fontSizeRange').value),
       chars: document.getElementById('charsInput').value || ' .:-=+*#@',
     };
   },
@@ -93,6 +108,10 @@ window.AsciiTheme = {
     }
     if (p.font !== undefined) {
       document.getElementById('fontSelect').value = p.font;
+    }
+    if (p.fontSize !== undefined) {
+      document.getElementById('fontSizeRange').value = p.fontSize;
+      document.getElementById('fontSizeVal').textContent = p.fontSize === 0 ? 'auto' : p.fontSize + 'px';
     }
     if (p.chars !== undefined) {
       document.getElementById('charsInput').value = p.chars;
@@ -113,7 +132,8 @@ window.AsciiTheme = {
     const rows = Math.ceil(srcH / cellH);
 
     // Font size: auto = fill output width by cols
-    const fontSize = params.fontSize !== null ? params.fontSize : outW / cols;
+    const manualFontSize = params.fontSize || 0;
+    const fontSize = manualFontSize > 0 ? manualFontSize : outW / cols;
     ctx.font = `${fontSize}px ${font}`;
     const charW = ctx.measureText('M').width;
     const charH = fontSize * 1.2;

@@ -86,12 +86,6 @@
         </select>
       </div>
 
-      <div class="control-row">
-        <label>Font-Größe (px) <span class="val" id="fontSizeVal">auto</span></label>
-        <input type="range" id="fontSizeRange" min="0" max="60" value="0" step="1">
-        <div style="font-size:10px;color:#444;margin-top:3px">0 = automatisch</div>
-      </div>
-
       <div class="color-row">
         <div class="color-swatch">
           <label>HINTERGRUND</label>
@@ -149,6 +143,7 @@
 
   <!-- Scripts: themes first, then export, then app (app initializes everything) -->
   <script src="js/themes/ascii.js"></script>
+  <script src="js/themes/rasterize.js"></script>
   <script src="js/export.js"></script>
   <script src="js/app.js"></script>
 
